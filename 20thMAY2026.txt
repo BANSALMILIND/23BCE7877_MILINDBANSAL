@@ -1,0 +1,146 @@
+USE vitcampus;
+
+CREATE TABLE Persons (
+    ID int NOT NULL,
+    LastName varchar(255) NOT NULL,
+    FirstName varchar(255) NOT NULL,
+    Age int
+);
+
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (1, 'Arora', 'Monika', 28);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (2, 'Verma', 'Niharika', 32);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (3, 'Singhal', 'Vishal', 24);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (4, 'Singh', 'Amitabh', 45);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (5, 'Bhati', 'Vivek', 17);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (6, 'Sharma', 'Aarav', 12);
+INSERT INTO Persons (ID, LastName, FirstName, Age) VALUES (7, 'Patel', 'Kavya', 63);
+
+CREATE TABLE People (
+    ID int NOT NULL,
+    LastName varchar(255) UNIQUE NOT NULL,
+    FirstName varchar(255) NOT NULL,
+    Age int
+);
+
+-- Make the ID column a Primary Key 
+ALTER TABLE Persons ADD PRIMARY KEY (ID); -- PRIMARY KEY = UNIQUE + NOT NULL
+
+-- WHOLE NAME BE UNIQUE IN THE TABLE(SO I CANNOT HAVE 2 ROHIT SHARMA IN MY TABLE).
+ALTER TABLE Persons ADD CONSTRAINT UC_Person_Name UNIQUE (FirstName, LastName);
+
+-- ALTERING COLUMNS IN MY OLD DATABASE
+alter table WORKER modify WORKER_ID int not null; -- PRIMARY KEY
+DESC WORKER;
+
+ALTER TABLE WORKER MODIFY DEPARTMENT VARCHAR(30) NOT NULL; -- MODIFYING LENGTH OF THE DEPT. COLUMN
+DESC WORKER;
+
+-- DROP CONSTANT AGE
+-- CREATING UNIQUE(AGE)
+ALTER TABLE Persons ADD UNIQUE (Age);
+ALTER TABLE PERSONS DROP INDEX AGE;
+
+-- CREATING CHECK THAT AGE BE GREATER THAN 0 (NON-NEGATIVE AGES)
+ALTER TABLE Persons ADD CONSTRAINT CHK_Age CHECK (Age >= 0);
+DESC PERSONS;
+INSERT INTO PERSONS VALUES(101 , "BANSAL","MILIND",21);
+INSERT INTO PERSONS VALUES(102, "TANGUTURU","DHANUSHYA",-20); -- THIS GIVES CHECK VIOLATED!
+INSERT INTO PERSONS VALUES(103, "SINGHAL","SAUMAYA", 0); -- OK AS AGE>=0 ALLOWED
+-- LET'S TRY DROP.
+ALTER TABLE Persons DROP CONSTRAINT CHK_Age;
+INSERT INTO PERSONS VALUES(102, "TANGUTURU","DHANUSHYA",-20); -- THIS GIVES CHECK VIOLATED!
+-- SINCE CONSTRAINT DROPPED SO NOW -20 AGE ACCEPTED :)
+
+-- constarints (new example):
+DROP TABLE IF EXISTS Voters;
+
+CREATE TABLE Voters (
+    VoterID int NOT NULL,
+    LastName varchar(255) NOT NULL,
+    FirstName varchar(255),
+    Age int,
+    City varchar(255) DEFAULT 'Coimbatore',
+    PRIMARY KEY (VoterID),
+    UNIQUE (FirstName, LastName),
+    CONSTRAINT CHK_Voter_Age CHECK (Age >= 18 AND Age <= 120)
+);
+
+
+ALTER TABLE Voters MODIFY FirstName varchar(255) NOT NULL;
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age) VALUES (1, 'Sharma', 'Rohit', 35);
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age, City) VALUES (2, 'Patel', 'Hardik', 18, 'Mumbai');
+
+SELECT * FROM Voters;
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age) VALUES (3, 'Das', 'Sanjay', 15); -- tooo young to vote :)
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age) VALUES (4, 'Nair', 'Anjali', 135); -- age>= 120 
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age) VALUES (1, 'Mishra', 'Alok', 29); -- duplicate id here
+
+INSERT INTO Voters (VoterID, LastName, FirstName, Age) VALUES (5, 'Sharma', 'Rohit', 42); -- rohit sharma is duplicated
+
+ALTER TABLE Voters ALTER City DROP DEFAULT;
+
+ALTER TABLE Voters DROP CONSTRAINT CHK_Voter_Age;
+-- insert 15 years again.
+INSERT INTO Voters (VoterID, LastName, FirstName, Age, City) VALUES (3, 'Das', 'Sanjay', 15, "Haridwar"); -- now added as no constraint to check age.
+
+ALTER TABLE Voters DROP INDEX FirstName;
+
+ALTER TABLE Voters DROP PRIMARY KEY;
+INSERT INTO Voters (VoterID, LastName, FirstName, Age, city) VALUES (1, 'Mishra', 'Alok', 29, "Banglore"); -- duplicate id here
+-- accpeted as there is not primary key :)
+
+-- primary key + foreign key........
+-- base for full stack:
+-- foreign key: 
+
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS category;
+
+CREATE TABLE category (
+    cid int PRIMARY KEY,
+    cname varchar(100) NOT NULL
+);
+
+INSERT INTO category VALUES (101, 'Electronics');
+INSERT INTO category VALUES (102, 'Home Appliances');
+INSERT INTO category VALUES (103, 'Furniture');
+INSERT INTO category VALUES (104, 'Books');
+INSERT INTO category VALUES (105, 'Fitness');
+
+CREATE TABLE products (
+    pid int PRIMARY KEY,
+    pname varchar(100) NOT NULL,
+    cid int, 
+    FOREIGN KEY (cid) REFERENCES category(cid)
+);
+
+INSERT INTO products VALUES (501, 'Ergonomic Chair', 103);
+INSERT INTO products VALUES (502, 'Algorithms Textbook', 104);
+INSERT INTO products VALUES (503, 'Smart Coffee Maker', 102);
+INSERT INTO products VALUES (504, 'Power Bank Samsung', 101);
+INSERT INTO products VALUES (505, 'Yoga Mat', 105);
+
+DROP TABLE products;
+
+CREATE TABLE products (
+    pid int PRIMARY KEY,
+    pname varchar(100) NOT NULL,
+    cid int, 
+    FOREIGN KEY (cid) REFERENCES category(cid) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+INSERT INTO products VALUES (501, 'Ergonomic Chair', 103);
+INSERT INTO products VALUES (502, 'Algorithms Textbook', 104);
+INSERT INTO products VALUES (503, 'Smart Coffee Maker', 102);
+INSERT INTO products VALUES (504, 'Power Bank Samsung', 101);
+INSERT INTO products VALUES (505, 'Yoga Mat', 105);
+
+DELETE FROM category WHERE cid = 101;
+
+SELECT * FROM category;
+SELECT * FROM products;
