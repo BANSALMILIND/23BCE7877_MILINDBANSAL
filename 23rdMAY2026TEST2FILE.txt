@@ -1,0 +1,144 @@
+-- TEST2 --
+DROP TABLE IF EXISTS EMPLOYEES;
+DROP TABLE IF EXISTS DEPARTMENTS;
+CREATE TABLE DEPARTMENTS (
+    DEPT_ID INT PRIMARY KEY,
+    DEPT_NAME VARCHAR(50) NOT NULL,
+    LOCATION_ID VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE EMPLOYEES (
+    EMPLOYEE_ID INT PRIMARY KEY,
+    EMPLOYEE_NAME VARCHAR(50) NOT NULL,
+    MANAGER_ID INT,
+    DEPT_ID INT,
+    SALARY DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (MANAGER_ID) REFERENCES EMPLOYEES(EMPLOYEE_ID),
+    FOREIGN KEY (DEPT_ID) REFERENCES DEPARTMENTS(DEPT_ID)
+);
+
+CREATE TABLE PROJECTS (
+    PROJECT_ID INT PRIMARY KEY,
+    PROJECT_NAME VARCHAR(50) NOT NULL,
+    CLIENT_NAME VARCHAR(50) NOT NULL,
+    START_DATE DATE NOT NULL,
+    DEPT_ID INT,
+    FOREIGN KEY (DEPT_ID) REFERENCES DEPARTMENTS(DEPT_ID)
+);
+
+CREATE TABLE ASSIGNMENTS (
+    ASSIGNMENT_ID INT PRIMARY KEY,
+    EMPLOYEE_ID INT,
+    PROJECT_ID INT,
+    HOURS_WORKED INT NOT NULL,
+    START_DATE DATE NOT NULL,
+    FOREIGN KEY (EMPLOYEE_ID) REFERENCES EMPLOYEES(EMPLOYEE_ID),
+    FOREIGN KEY (PROJECT_ID) REFERENCES PROJECTS(PROJECT_ID)
+);
+
+INSERT INTO DEPARTMENTS (DEPT_ID, DEPT_NAME, LOCATION_ID) VALUES
+(10, 'CONSULTING', 'NYC'),
+(20, 'ENGINEERING', 'SF'),
+(30, 'R&D', 'LONDON'),
+(40, 'SALES', 'NYC'),
+(50, 'HR', 'SF'),
+(60, 'ADMIN', 'LONDON');
+
+INSERT INTO EMPLOYEES (EMPLOYEE_ID, EMPLOYEE_NAME, MANAGER_ID, DEPT_ID, SALARY) VALUES
+(100, 'ALICE SMITH (CEO)', NULL, 10, 180000.00),
+(101, 'BOB JOHNSON', 100, 20, 120000.00),
+(102, 'CHARLIE BROWN', 101, 20, 95000.00),
+(103, 'DIANA PRINCE', 100, 30, 110000.00),
+(104, 'EVAN CLARK', 103, 30, 85000.00),
+(105, 'FIONA GLEN', 101, 20, 90000.00),
+(106, 'GEORGE KING', 100, 40, 75000.00),
+(107, 'HANNAH LEE', 103, 30, 88000.00),
+(108, 'IVAN ROSSI', 100, 50, 60000.00),
+(109, 'JANE DOE', 101, 20, 125000.00),
+(110, 'KEVIN BLUE', 104, 30, 86000.00);
+
+INSERT INTO PROJECTS (PROJECT_ID, PROJECT_NAME, CLIENT_NAME, START_DATE, DEPT_ID) VALUES
+(5001, 'AURORA MIGRATION', 'GLOBALTECH SOLUTIONS', '2023-01-15', 20),
+(5002, 'SYNERGY APP DEV', 'ZENITH CORP', '2023-05-20', 30),
+(5003, 'Q4 SALES STRATEGY', 'APEX INDUSTRIES', '2024-01-01', 40),
+(5004, 'GLOBAL EXPANSION', 'GLOBALTECH SOLUTIONS', '2024-03-10', 10),
+(5005, 'INTERNAL HR TOOL', 'INTERNAL', '2024-02-01', 50),
+(5006, 'DATA ANALYTICS', 'ZENITH CORP', '2022-11-01', 20),
+(5007, 'FUTURE TECH R&D', 'R&D DEPT', '2024-06-01', 30);
+
+INSERT INTO ASSIGNMENTS (ASSIGNMENT_ID, EMPLOYEE_ID, PROJECT_ID, HOURS_WORKED, START_DATE) VALUES
+(1, 101, 5001, 150, '2023-01-15'),
+(2, 102, 5001, 160, '2023-01-15'),
+(3, 105, 5001, 140, '2023-02-01'),
+(4, 103, 5002, 80, '2023-05-20'),
+(5, 104, 5002, 70, '2023-06-01'),
+(6, 106, 5003, 5, '2024-01-01'),
+(7, 100, 5004, 20, '2024-03-10'),
+(8, 107, 5002, 75, '2023-05-25'),
+(9, 109, 5006, 200, '2022-11-01'),
+(10, 101, 5006, 250, '2022-11-01'),
+(11, 102, 5006, 180, '2022-12-01'),
+(12, 110, 5007, 10, '2024-06-01');
+
+-- 1. List the Employee Name, their Department Name, and the Location Name for all employees.
+SELECT E.EMPLOYEE_NAME, D.DEPT_NAME, D.LOCATION_ID AS LOCATION FROM EMPLOYEES E, DEPARTMENTS D WHERE D.DEPT_ID = E.DEPT_ID;
+
+-- 2. Retrieve the Project Name, Client Name, and the Total Hours Worked on that project, but only for projects managed by the 'Consulting' department.
+SELECT P.PROJECT_NAME, P.CLIENT_NAME, SUM(A.HOURS_WORKED) AS TOTAL_HOURS FROM PROJECTS P, ASSIGNMENTS A, DEPARTMENTS D WHERE P.PROJECT_ID = A.PROJECT_ID AND P.DEPT_ID = D.DEPT_ID AND D.DEPT_NAME = "CONSULTING" GROUP BY P.PROJECT_NAME, P.CLIENT_NAME;
+
+-- 3. Find the names of Employees who have worked on a project with Client Name 'GlobalTech Solutions'. List the Employee Name and Project Name.
+SELECT E.EMPLOYEE_NAME, P.PROJECT_NAME FROM EMPLOYEES E, ASSIGNMENTS A, PROJECTS P WHERE E.EMPLOYEE_ID = A.EMPLOYEE_ID AND A.PROJECT_ID = P.PROJECT_ID AND P.CLIENT_NAME = "GLOBALTECH SOLUTIONS";
+
+-- 4. List all Departments that have no Employees currently assigned to them.
+SELECT D.DEPT_NAME FROM DEPARTMENTS D LEFT JOIN EMPLOYEES E ON D.DEPT_ID = E.DEPT_ID WHERE E.EMPLOYEE_ID IS NULL;
+
+-- 5. Show the Manager Name, the Department Name they manage, and the total number of direct reports they have.
+SELECT M.EMPLOYEE_NAME AS MANAGER_NAME, D.DEPT_NAME, COUNT(E.EMPLOYEE_ID) AS TOTAL_DIRECT_REPORTS FROM EMPLOYEES E, EMPLOYEES M, DEPARTMENTS D WHERE E.MANAGER_ID = M.EMPLOYEE_ID AND M.DEPT_ID = D.DEPT_ID GROUP BY M.EMPLOYEE_NAME, D.DEPT_NAME;
+
+-- 6. Calculate the Average Hours Worked per Employee across all projects. List the Employee Name and the average hours.
+SELECT E.EMPLOYEE_NAME, AVG(A.HOURS_WORKED) AS AVERAGE_HOURS FROM EMPLOYEES E, ASSIGNMENTS A WHERE E.EMPLOYEE_ID = A.EMPLOYEE_ID GROUP BY E.EMPLOYEE_NAME;
+
+-- 7. Find the Department Name(s) that have an average salary above the company-wide average salary.
+SELECT D.DEPT_NAME FROM DEPARTMENTS D, EMPLOYEES E WHERE D.DEPT_ID = E.DEPT_ID GROUP BY D.DEPT_NAME HAVING AVG(E.SALARY) > (SELECT AVG(SALARY) FROM EMPLOYEES);
+
+-- 8. Identify the Client Name(s) whose projects have a total combined hours worked exceeding 500 hours.
+SELECT P.CLIENT_NAME FROM PROJECTS P, ASSIGNMENTS A WHERE P.PROJECT_ID = A.PROJECT_ID GROUP BY P.CLIENT_NAME HAVING SUM(A.HOURS_WORKED) > 500;
+
+-- 9. For each Location, find the Department Name with the highest count of employees.
+
+-- 10. Calculate the total number of employees assigned to each Project, but only include projects that have more than 5 employees assigned.
+SELECT P.PROJECT_NAME, COUNT(A.EMPLOYEE_ID) AS EMPLOYEE_COUNT FROM PROJECTS P, ASSIGNMENTS A WHERE P.PROJECT_ID = A.PROJECT_ID GROUP BY P.PROJECT_NAME HAVING COUNT(A.EMPLOYEE_ID) > 5;
+
+-- 11. Find the Employee Name(s) who work on ALL projects managed by the 'R&D' department.
+
+-- 12. Retrieve the Department Name(s) that have employees assigned to more than one project.
+SELECT DISTINCT D.DEPT_NAME FROM DEPARTMENTS D, EMPLOYEES E WHERE D.DEPT_ID = E.DEPT_ID AND E.EMPLOYEE_ID IN (SELECT EMPLOYEE_ID FROM ASSIGNMENTS GROUP BY EMPLOYEE_ID HAVING COUNT(DISTINCT PROJECT_ID) > 1);
+
+-- 13. Write a query to list the Employee Name and Project Name for any employee who has worked less than 10 hours on a project.
+SELECT E.EMPLOYEE_NAME, P.PROJECT_NAME FROM EMPLOYEES E, ASSIGNMENTS A, PROJECTS P WHERE E.EMPLOYEE_ID = A.EMPLOYEE_ID AND A.PROJECT_ID = P.PROJECT_ID AND A.HOURS_WORKED < 10;
+
+-- 14. Find the Project Name(s) that have no assigned employees.
+SELECT P.PROJECT_NAME FROM PROJECTS P LEFT JOIN ASSIGNMENTS A ON P.PROJECT_ID = A.PROJECT_ID WHERE A.ASSIGNMENT_ID IS NULL;
+
+-- 15. Select the Employee Name(s) whose salary is greater than the maximum salary in their own department.
+
+-- 16. Assuming the Assignments table has a start_date column, find the Employee Name and their oldest project start date.
+SELECT E.EMPLOYEE_NAME, MIN(A.START_DATE) AS OLDEST_START_DATE FROM EMPLOYEES E, ASSIGNMENTS A WHERE E.EMPLOYEE_ID = A.EMPLOYEE_ID GROUP BY E.EMPLOYEE_NAME;
+
+-- 17. Write a MySQL query using the DATE_FORMAT function to list all projects that were active in the year 2023.
+SELECT PROJECT_NAME FROM PROJECTS WHERE DATE_FORMAT(START_DATE, "%Y") = "2023";
+
+-- 18. Use the MySQL-specific IFNULL function to list all Employee Names. If an employee has no manager, display "CEO" instead of NULL.
+SELECT E.EMPLOYEE_NAME, IFNULL(M.EMPLOYEE_NAME, 'CEO') AS MANAGER_NAME FROM EMPLOYEES E LEFT JOIN EMPLOYEES M ON E.MANAGER_ID = M.EMPLOYEE_ID;
+
+-- 19. Find the top 3 Departments based on the total hours worked by all their employees across all projects.
+SELECT D.DEPT_NAME FROM DEPARTMENTS D, EMPLOYEES E, ASSIGNMENTS A WHERE D.DEPT_ID = E.DEPT_ID AND E.EMPLOYEE_ID = A.EMPLOYEE_ID GROUP BY D.DEPT_NAME ORDER BY SUM(A.HOURS_WORKED) DESC LIMIT 3;
+
+-- 20. Display the Project Name and a status ("High Activity" if total hours > 300, "Normal" otherwise) using the CASE statement.
+
+-- 21. List the Employee Name and their Manager's Name, even if the employee has no manager, or if a potential manager has no employees reporting to them.
+
+-- 22. Write a query using a Common Table Expression (CTE) to find the Project Name and the number of unique employees assigned to it.
+
+-- 23. Find the Employee Name(s) who are assigned to the same projects as Employee ID 101.
+SELECT DISTINCT E.EMPLOYEE_NAME FROM EMPLOYEES E, ASSIGNMENTS A WHERE E.EMPLOYEE_ID = A.EMPLOYEE_ID AND A.PROJECT_ID IN (SELECT PROJECT_ID FROM ASSIGNMENTS WHERE EMPLOYEE_ID = 101) AND E.EMPLOYEE_ID != 101;
