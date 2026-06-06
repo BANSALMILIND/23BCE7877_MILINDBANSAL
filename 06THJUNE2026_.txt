@@ -1,0 +1,243 @@
+test> db.sales.drop()
+true
+
+test> db.sales.insertMany([
+	{ "_id" : 1, "item" : "Americanos", "price" : 5, "size": "Short", "quantity" : 22, "date" : ISODate("2022-01-15T08:00:00Z") },
+	{ "_id" : 2, "item" : "Cappuccino", "price" : 6, "size": "Short","quantity" : 12, "date" : ISODate("2022-01-16T09:00:00Z") },
+	{ "_id" : 3, "item" : "Lattes", "price" : 15, "size": "Grande","quantity" : 25, "date" : ISODate("2022-01-16T09:05:00Z") },
+	{ "_id" : 4, "item" : "Mochas", "price" : 25,"size": "Tall", "quantity" : 11, "date" : ISODate("2022-02-17T08:00:00Z") },
+	{ "_id" : 5, "item" : "Americanos", "price" : 10, "size": "Grande","quantity" : 12, "date" : ISODate("2022-02-18T21:06:00Z") },
+	{ "_id" : 6, "item" : "Cappuccino", "price" : 7, "size": "Tall","quantity" : 20, "date" : ISODate("2022-02-20T10:07:00Z") },
+	{ "_id" : 7, "item" : "Lattes", "price" : 25,"size": "Tall", "quantity" : 30, "date" : ISODate("2022-02-21T10:08:00Z") },
+	{ "_id" : 8, "item" : "Americanos", "price" : 10, "size": "Grande","quantity" : 21, "date" : ISODate("2022-02-22T14:09:00Z") },
+	{ "_id" : 9, "item" : "Cappuccino", "price" : 10, "size": "Grande","quantity" : 17, "date" : ISODate("2022-02-23T14:09:00Z") },
+	{ "_id" : 10, "item" : "Americanos", "price" : 8, "size": "Tall","quantity" : 15, "date" : ISODate("2022-02-25T14:09:00Z")}
+]);
+{
+  acknowledged: true,
+  insertedIds: { '0': 1, '1': 2, '2': 3, '3': 4, '4': 5, '5': 6, '6': 7, '7': 8, '8': 9, '9': 10 }
+}
+
+test> db.sales.createIndex({ date: 1 })
+date_1
+
+test> db.sales.createIndex({ item: 1 })
+item_1
+
+test> db.sales.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { date: 1 }, name: 'date_1' },
+  { v: 2, key: { item: 1 }, name: 'item_1' }
+]
+
+test> db.movies.drop()
+true
+
+test> db.movies.insertMany([
+	{ "_id" : 1, "title" : "The Matrix", "genre" : "Sci-Fi", "year" : 1999 },
+	{ "_id" : 2, "title" : "Pirates of Silicon Valley", "genre" : "Drama", "year" : 1999 },
+	{ "_id" : 3, "title" : "Social Network", "genre" : "Biography", "year" : 2010 },
+	{ "_id" : 4, "title" : "Inception", "genre" : "Sci-Fi", "year" : 2010 },
+	{ "_id" : 5, "title" : "Jobs", "genre" : "Biography", "year" : 2013 }
+]);
+{
+  acknowledged: true,
+  insertedIds: { '0': 1, '1': 2, '2': 3, '3': 4, '4': 5 }
+}
+
+test> db.movies.createIndex({ title: 1 })
+title_1
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' }
+]
+
+test> db.users.drop()
+true
+
+test> db.users.insertMany([
+   { "email": "john@test.com", "name": "john" },
+   { "email": "jane@test.com", "name": "jane" }
+]);
+{
+  acknowledged: true,
+  insertedIds: { '0': 0, '1': 1 }
+}
+
+test> db.users.createIndex({ email: 1 }, { unique: true })
+email_1
+
+test> db.users.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { email: 1 }, name: 'email_1' }
+]
+
+test> db.locations.drop()
+true
+
+test> db.locations.insertOne({
+	"address": "Downtown San Jose, CA, USA",
+	"lat": 37.335480,
+	"long": -121.893028
+});
+{
+  acknowledged: true,
+  insertedId: ObjectId('6661da123456789abcdef001')
+}
+
+test> db.locations.createIndex({ lat: 1, long: 1 }, { unique: true })
+lat_1_long_1
+
+test> db.locations.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { lat: 1, long: 1 }, name: 'lat_1_long_1' }
+]
+
+test> db.movies.createIndex({ title: 1, year: 1 })
+title_1_year_1
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' },
+  { v: 2, key: { title: 1, year: 1 }, name: 'title_1_year_1' }
+]
+
+test> db.movies.find({ title: /valley/gi, year: 1999 }).explain('executionStats')
+{
+  queryPlanner: {
+    namespace: 'test.movies',
+    indexFilterSet: false,
+    winningPlan: {
+      stage: 'FETCH',
+      inputStage: {
+        stage: 'IXSCAN',
+        keyPattern: { title: 1, year: 1 },
+        indexName: 'title_1_year_1',
+        direction: 'forward'
+      }
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 1,
+    executionTimeMillis: 0,
+    totalKeysExamined: 1,
+    totalDocsExamined: 1
+  },
+  ok: 1
+}
+
+test> db.movies.find({ title: /valley/gi }).explain('executionStats')
+{
+  queryPlanner: {
+    namespace: 'test.movies',
+    indexFilterSet: false,
+    winningPlan: {
+      stage: 'FETCH',
+      inputStage: {
+        stage: 'IXSCAN',
+        keyPattern: { title: 1, year: 1 },
+        indexName: 'title_1_year_1',
+        direction: 'forward'
+      }
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 1,
+    executionTimeMillis: 0,
+    totalKeysExamined: 1,
+    totalDocsExamined: 1
+  },
+  ok: 1
+}
+
+test> db.movies.find({ year: 1999 }).explain('executionStats')
+{
+  queryPlanner: {
+    namespace: 'test.movies',
+    indexFilterSet: false,
+    winningPlan: {
+      stage: 'COLLSCAN',
+      filter: { year: { '$eq': 1999 } },
+      direction: 'forward'
+    },
+    rejectedPlans: []
+  },
+  executionStats: {
+    executionSuccess: true,
+    nReturned: 2,
+    executionTimeMillis: 3,
+    totalKeysExamined: 0,
+    totalDocsExamined: 5
+  },
+  ok: 1
+}
+
+test> db.movies.createIndex({ year: 1 })
+year_1
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' },
+  { v: 2, key: { title: 1, year: 1 }, name: 'title_1_year_1' },
+  { v: 2, key: { year: 1 }, name: 'year_1' }
+]
+
+test> db.movies.dropIndex('year_1')
+{ nIndexesWas: 4, ok: 1 }
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' },
+  { v: 2, key: { title: 1, year: 1 }, name: 'title_1_year_1' }
+]
+
+test> db.movies.createIndex({ runtime: -1 })
+runtime_-1
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' },
+  { v: 2, key: { title: 1, year: 1 }, name: 'title_1_year_1' },
+  { v: 2, key: { runtime: -1 }, name: 'runtime_-1' }
+]
+
+test> db.movies.dropIndex({ runtime: -1 })
+{ nIndexesWas: 4, ok: 1 }
+
+test> db.movies.createIndex({ year: 1 })
+year_1
+
+test> db.movies.createIndex({ runtime: 1 })
+runtime_1
+
+test> db.movies.getIndexes()
+[
+  { v: 2, key: { _id: 1 }, name: '_id_' },
+  { v: 2, key: { title: 1 }, name: 'title_1' },
+  { v: 2, key: { title: 1, year: 1 }, name: 'title_1_year_1' },
+  { v: 2, key: { year: 1 }, name: 'year_1' },
+  { v: 2, key: { runtime: 1 }, name: 'runtime_1' }
+]
+
+test> db.movies.dropIndexes()
+{
+  nIndexesWas: 5,
+  msg: 'non-_id indexes dropped for collection',
+  ok: 1
+}
+
+test> db.movies.getIndexes()
+[ { v: 2, key: { _id: 1 }, name: '_id_' } ]
