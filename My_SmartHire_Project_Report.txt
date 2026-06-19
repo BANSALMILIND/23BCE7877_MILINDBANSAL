@@ -1,0 +1,142 @@
+================================================================================
+                    MY PROJECT REPORT: SMARTHIRE BACKEND ENGINE
+================================================================================
+
+PROJECT NAME: SmartHire (Application Tracking & Recruitment System)
+COURSE/SUBMISSION PURPOSE: Core Backend Development & Database Verification
+TECH STACK USED: Java 17, Spring Boot 3.3.0, MongoDB (Local Instance), Maven
+
+--------------------------------------------------------------------------------
+1. INTRODUCTION & OVERVIEW (WHAT I BUILT)
+--------------------------------------------------------------------------------
+For this project, I built a backend system for a recruitment and applicant tracking 
+app called SmartHire. The goal was to handle real-world hiring workflows, like tracking 
+candidates from their initial application up to getting an offer letter, and sorting 
+them based on how well their skills match a job posting.
+
+Instead of writing a complex frontend, I focused entirely on the core logic and database 
+design. Everything runs locally on Java 17 and Spring Boot, and it connects directly 
+to a local MongoDB instance. To make testing easier, I added a quick console-based menu 
+loop via Spring Boot's CommandLineRunner, and I exposed a bunch of basic REST controllers 
+so I could test payloads and routes directly through Postman.
+
+--------------------------------------------------------------------------------
+2. MY DEVELOPMENT SETUP & ENVIRONMENT
+--------------------------------------------------------------------------------
+These are the exact tools, runtimes, and versions I used to build and test this system:
+
+* Code Editor / IDE: IntelliJ IDEA (or VS Code) for writing the Java code.
+* Java Development Kit: OpenJDK 17 (LTS) - required for compiling the Spring Boot app.
+* Database Server: MongoDB Community Server (v6.0 or v7.0 running locally on port 27017).
+* Database Shell: mongosh (MongoDB Shell) for manually verifying data in the collections.
+* Dependency Manager: Apache Maven 3.9.x to manage dependencies and package the JAR file.
+* Testing Scripts (Optional): Node.js (v20) and npm to run simple mock data injection scripts.
+
+--------------------------------------------------------------------------------
+3. DEPENDENCIES I USED (POM.XML & PACKAGE.JSON)
+--------------------------------------------------------------------------------
+
+3.1 Maven Dependencies (Java Backend)
+I tried to keep the project clean, so I only added dependencies that were absolutely necessary:
+* spring-boot-starter-web: Handles all the routing, JSON requests, and starts up an embedded Tomcat server on port 8080.
+* spring-boot-starter-data-mongodb: Connects Spring to Mongo and gives me MongoTemplate / MongoRepository layers so I don't have to write manual connection drivers.
+* springdoc-openapi-starter-webmvc-ui: Automatically looks at my controllers and sets up a Swagger UI page at http://localhost:8080/swagger-ui/index.html so anyone can test the APIs.
+
+3.2 Node.js Test Dependencies (For my helper scripts)
+If running my auxiliary JavaScript mock test runners, these are the packages used:
+* axios: For making easy HTTP requests to my Spring Boot API.
+* dotenv: To keep configuration variables or local URIs out of the main code.
+* mongoose: Used to check or seed fast mockup structures directly when testing the database side.
+
+--------------------------------------------------------------------------------
+4. HOW I DESIGNED THE DATABASE (COLLECTIONS & RELATIONSHIPS)
+--------------------------------------------------------------------------------
+One thing I paid close attention to was how data links together in MongoDB. Instead of 
+shoving huge, messy arrays inside a single document (which can slow things down and hit 
+Mongo's 16MB document limits), I split everything into 5 flat collections and used 
+Spring Data's `@DocumentReference` to link them by ID.
+
+Here's how they connect:
+
+  [ RECRUITER ] 
+        |
+        | (Manages)
+        v
+  [ JOB POSTING ] ---> (Has Many) ---> [ APPLICATION ] <--- (Belongs to) --- [ CANDIDATE ]
+                                              |                                   |
+                                              | (If Hired)                        | (Has One)
+                                              v                                   v
+                                      [ PIPELINE WORKFLOW ]              [ OFFER LETTER ]
+
+* One-to-One: A Candidate has exactly one OfferLetter (and vice versa).
+* One-to-Many: A JobPosting can have a list of individual Applications tracking it.
+* References: The Application collection acts as a bridge. It contains small DBRefs linking back to the Candidate, the JobPosting, and the Recruiter looking after it.
+
+--------------------------------------------------------------------------------
+5. MY API ENDPOINTS & ROUTING LOGIC
+--------------------------------------------------------------------------------
+All my controllers use http://localhost:8080/api as the root path. Every single response 
+returns a uniform structure: `{ "success": true/false, "data": ..., "message": "..." }` 
+so the data is always clean and consistent.
+
+5.1 Recruiter Routes (/api/recruiter)
+* POST /api/recruiter - Save a new recruiter profile.
+  Sample input: { "id": "rec-01", "name": "Jane Doe", "employeeId": "E101", "department": "Tech" }
+* GET /api/recruiter - List all recruiters (can filter by department).
+* GET /api/recruiter/{id} - Find a specific recruiter.
+* PUT /api/recruiter/{id} - Update a recruiter's details.
+* DELETE /api/recruiter/{id} - Remove a recruiter from the system.
+
+5.2 Candidate Routes (/api/candidate)
+* POST /api/candidate - Register a candidate, their experience, and their skill tags.
+  Sample input: 
+  {
+    "id": "cand-01",
+    "fullName": "John Smith",
+    "email": "john@email.com",
+    "yearsOfExperience": 3,
+    "hasReferral": false,
+    "skills": [{ "id": "sk-1", "name": "Java" }]
+  }
+* GET /api/candidate - Show all candidates.
+* GET /api/candidate/{id} - Get full profile of a single candidate.
+* PUT /api/candidate/{id} - Edit a candidate's information or skills.
+* DELETE /api/candidate/{id} - Delete a candidate profile.
+
+5.3 Job Posting Routes (/api/jobposting)
+* POST /api/jobposting - Create a job opening, add required skills, and assign a recruiter ID.
+  Sample input: { "id": "job-10", "title": "Java Dev", "mandatorySkillNames": ["Java"], "recruiter": {"id": "rec-01"} }
+* GET /api/jobposting - List out all active job descriptions.
+* GET /api/jobposting/{id}/candidates - Get all applications submitted for this specific job.
+
+5.4 The Application Workflow & My Custom State Machine
+* POST /api/candidate/{candId}/apply/{jobId} - Submits a candidate's profile to a job opening. It creates an application document and sets its status to "APPLIED".
+* PUT /api/application/{appId}/pipeline-status?status=SCREENED - Updates where the candidate is in the hiring process. 
+
+  **Important Node on My Logic:** I didn't want users jumping statuses randomly (like moving a brand new applicant straight to an offer). I wrote a simple service-level "State Machine" that checks transitions. The allowed flow is: APPLIED -> SCREENED -> INTERVIEWED -> OFFERED -> ACCEPTED (or REJECTED at any stage). 
+  If someone tries to bypass a step, the backend throws an `InvalidPipelineTransitionException` and gives an HTTP 422 Unprocessable Entity error.
+
+5.5 Interview Scheduler (/api/interview)
+* POST /api/interview/schedule - Books an interview time by mapping a Recruiter, Candidate, and Job Posting together.
+* GET /api/interview/upcoming?recruiterId=rec-01 - Shows a recruiter their list of upcoming interviews, filtering out any that have already passed based on the system clock.
+
+5.6 Database Analytics & Custom Aggregations
+Instead of loading thousands of documents into the Java application's memory loop and writing complex loops to count or calculate scores, I let MongoDB handle it using aggregation pipelines:
+* POST /api/scoring/compute/{candId}/{jobId} - Runs a calculation that grades a candidate against a job posting. It gives +20 points per matching skill, +15 if they meet experience thresholds, and +10 for an internal referral.
+* GET /api/scoring/leaderboard/{jobId} - Ranks all applicants for a specific job from highest score to lowest.
+* GET /api/reports/recruiter/{recId}/stats - Pulls summary numbers for a recruiter, showing how many candidates they are handling, offers extended, and their current acceptance rate.
+
+--------------------------------------------------------------------------------
+6. WHY I DESIGNED IT THIS WAY (MY ENGINEERING DECISIONS)
+--------------------------------------------------------------------------------
+If asked why I built the system this way during my review, here are my main reasons:
+
+1. Keeping Data Clean with Strict Status Rules:
+   By creating a custom workflow validation check in my service layer, I made sure that application milestones can never be skipped or corrupted by invalid API updates.
+
+2. Offloading Hard Math to MongoDB:
+   Using native MongoDB Aggregations for scoring and recruiter statistics means the database engine handles the filtering and math before returning the results. It keeps the Spring Boot app incredibly fast and memory-light.
+
+3. Smart Referencing Over Nesting:
+   Using flat collections linked via index-backed references (`@DocumentReference`) instead of deep sub-document arrays ensures our database queries stay quick, lookups are direct, and we never risk exceeding MongoDB file size constraints as the system grows.
+================================================================================

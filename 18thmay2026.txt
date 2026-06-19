@@ -1,0 +1,181 @@
+-- Data Definition langauges.
+SHOW DATABASES;
+
+use vitcampus;
+
+show tables from vitcampus;
+
+select * from compsci;
+
+desc compsci;
+
+alter table compsci add(
+studentdepartment varchar(30));
+
+insert into compsci values(118 , "Akriti Singh" , 86, "CSE CORE", 7897897895, "India");
+
+alter table compsci add(
+stdphone1 int8 , stdphone2 int8);
+
+alter table compsci drop column stdphone2;
+
+alter table compsci add(
+scountry varchar(30) default 'India');
+
+insert into compsci values(117 , "Milind" , 100, "CSE CORE" , 98789878, "India");
+
+alter table compsci rename column scountry to student_location;
+
+INSERT INTO compsci (sid, sname, marks, studentdepartment, stdphone1) 
+VALUES (118, 'Aanya Sharma', 95, 'CSE AIML', 9876543210);
+
+select * from compsci;
+
+show tables from vitcampus;
+
+select * from electricals;
+
+delete from electricals;
+
+select * from electricals;
+
+rename table elec to electricals;
+-- TRUNCATE: The table structure remains, but all data inside is wiped out.
+-- It cleans out the table, leaving an empty shell behind.
+
+-- DROP: The entire table structure is completely gone.
+-- The complete thing is destroyed from the database permanently.
+
+-- DML (Data Manipulation Language):
+-- Used for modifying data, e.g., changing 'Jayanth' -> 'Jayanth V'.
+-- DELETE is used for specific rows (deleting one particular row or specific data).
+
+-- PERMANENT ACTIONS (DDL - Cannot be undone!):
+-- DROP is a permanent action. If executed, you CANNOT ROLLBACK. 
+-- It is gone once, and gone for all life!
+-- TRUNCATE is permanent too (cannot be rolled back).
+
+-- UNDO CAPABILITIES (DML):
+-- Unlike MS Paint where Undo/Redo always works, SQL has strict rules.
+-- Only DELETE and other DML actions can be undone using ROLLBACK.
+-- You can undo those specific data actions if autocommit is off.
+
+-- DML(DATA MANIPULATION LANGUAGES).
+CREATE TABLE Worker1 (
+    WORKER_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    FIRST_NAME CHAR(25),
+    LAST_NAME CHAR(25),
+    SALARY INT, -- Removed the deprecated (15)
+    JOINING_DATE DATETIME,
+    DEPARTMENT CHAR(25)
+);
+
+INSERT INTO Worker1 
+    (WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) 
+VALUES
+    (001, 'Monika', 'Arora', 100000, '2014-02-20 09:00:00', 'HR'),
+    (002, 'Niharika', 'Verma', 80000, '2014-06-11 09:00:00', 'Admin'),
+    (003, 'Vishal', 'Singhal', 300000, '2014-02-20 09:00:00', 'HR'),
+    (004, 'Amitabh', 'Singh', 500000, '2014-02-20 09:00:00', 'Admin'),
+    (005, 'Vivek', 'Bhati', 500000, '2014-06-11 09:00:00', 'Admin'),
+    (006, 'Vipul', 'Diwan', 200000, '2014-06-11 09:00:00', 'Account'),
+    (007, 'Satish', 'Kumar', 75000, '2014-01-20 09:00:00', 'Account'),
+    (008, 'Geetika', 'Chauhan', 90000, '2014-04-11 09:00:00', 'Admin');
+    
+    
+DROP TABLE WORKER;
+RENAME TABLE WORKER1 TO WORKER;
+
+SELECT * FROM WORKER;
+
+UPDATE Worker 
+SET SALARY = SALARY + 5000 
+WHERE DEPARTMENT = 'HR';
+
+UPDATE Worker 
+SET LAST_NAME = 'Sharma' 
+WHERE FIRST_NAME = 'Monika';
+
+UPDATE Worker 
+SET SALARY = 90000, DEPARTMENT = 'Admin' 
+WHERE FIRST_NAME = 'Satish' AND LAST_NAME = 'Kumar';
+
+UPDATE Worker 
+SET DEPARTMENT = 'Management' 
+WHERE FIRST_NAME LIKE 'V%';
+
+UPDATE WORKER SET SALARY = SALARY*0.15 AND DEPARTMENT = " NEW ADMIN" WHERE LAST_NAME LIKE "S%" OR FIRST_NAME LIKE "%E";
+
+UPDATE WORKER SET SALARY = 300000 WHERE WORKER_ID = 3;
+UPDATE WORKER SET SALARY = 500000 WHERE WORKER_ID = 4;
+UPDATE WORKER SET SALARY = 500000 WHERE WORKER_ID = 5;
+UPDATE WORKER SET SALARY = 100000 WHERE WORKER_ID = 1;
+
+UPDATE WORKER SET SALARY = SALARY*0.15 ,DEPARTMENT = " NEW ADMIN" 
+WHERE LAST_NAME LIKE "S%" OR FIRST_NAME LIKE "%E";
+
+delete from worker where worker_id = 8;
+
+select first_name, last_name, salary from worker where salary >= 500000;
+
+-- Transaction Control Languages..(TCL)
+create table emp(id int);
+start transaction;
+insert into emp values(101);
+select * from emp;
+savepoint time15;
+
+insert into emp values(102);
+savepoint time16;
+
+insert into emp values(103);
+savepoint time17;
+
+rollback to time17;
+select * from emp;
+commit;
+drop table emp;
+
+commit;
+
+-- double: gold and silver.
+-- float : dmart daily work...
+-- varchar : string....
+-- char : single character.
+-- date columns that store dates
+-- text : means same string. varchar we can prescribe (40 for first name)...text -> more memory.. remarks : text!!
+
+
+-- using where clause..
+-- clause: sql : where, having, order, group by
+
+desc worker;
+
+SELECT WORKER_ID, FIRST_NAME, SALARY, DEPARTMENT
+FROM Worker
+WHERE SALARY > 80000 
+  AND SALARY <= 200000;
+  
+SELECT FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE
+FROM Worker
+WHERE SALARY > 150000 
+  AND JOINING_DATE > '2014-02-20 09:00:00' 
+  AND JOINING_DATE <= '2014-06-11 09:00:00';
+  
+SELECT FIRST_NAME, SALARY, DEPARTMENT
+FROM Worker
+WHERE (DEPARTMENT = 'Admin' AND SALARY < 500000)
+   OR (DEPARTMENT = 'Account' AND SALARY > 75000);
+   
+SELECT WORKER_ID, FIRST_NAME, SALARY
+FROM Worker
+WHERE WORKER_ID > 2 
+  AND WORKER_ID < 7 
+  AND SALARY != 200000;
+  
+SELECT WORKER_ID, FIRST_NAME, SALARY, DEPARTMENT
+FROM Worker
+WHERE SALARY >= 75000 
+  AND SALARY < 100000 
+  AND WORKER_ID > 1;
+  

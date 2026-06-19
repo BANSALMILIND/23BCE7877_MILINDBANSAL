@@ -1,0 +1,191 @@
+-- 19th may 2026.....
+use vitcampus;
+show tables from vitcampus;
+select * from worker;
+select FIRST_NAME, LAST_NAME from worker where salary>=100000 OR DEPARTMENT LIKE "ADMIN";
+SELECT * FROM WORKER;
+
+-- USING IN KEYWORD : The IN keyword in MySQL is primarily a 
+-- logical operator used within a WHERE clause to check if a value matches 
+-- any item in a specified list.
+SELECT WORKER_ID, FIRST_NAME FROM WORKER WHERE WORKER_ID IN (1,5,6);
+
+-- USE NOT IN
+SELECT WORKER_ID, FIRST_NAME FROM WORKER WHERE WORKER_ID NOT IN (1,5,6);
+
+-- BETWEEN KEYWORD
+SELECT WORKER_ID, LAST_NAME FROM WORKER WHERE SALARY BETWEEN 55000 AND 85000;
+
+SELECT * FROM WORKER WHERE WORKER_ID IN (1,5,7,2,4) 
+AND SALARY BETWEEN 15000 AND 50000;
+
+SELECT * FROM WORKER 
+WHERE WORKER_ID IN (1, 5, 7, 2, 4) 
+AND SALARY BETWEEN 15000 AND 50000 
+OR DEPARTMENT IN ('Admin', 'HR');
+
+-- and + or
+SELECT * FROM WORKER 
+WHERE (DEPARTMENT = 'HR' OR DEPARTMENT = 'Account') 
+AND SALARY > 80000;
+
+-- and + between
+SELECT * FROM WORKER 
+WHERE WORKER_ID IN (1, 2, 3, 4, 5) 
+AND SALARY BETWEEN 90000 AND 300000; -- no output for this one -> no one satisfies
+
+-- in + not between
+SELECT * FROM WORKER 
+WHERE DEPARTMENT IN ('Admin', 'HR') 
+AND SALARY NOT BETWEEN 90000 AND 200000;
+
+-- not in + between
+SELECT * FROM WORKER 
+WHERE DEPARTMENT NOT IN ('Admin') 
+AND SALARY BETWEEN 80000 AND 250000;
+
+-- not in + not between
+SELECT * FROM WORKER 
+WHERE DEPARTMENT NOT IN ('HR', 'Account') 
+AND SALARY NOT BETWEEN 100000 AND 400000;
+
+-- in + between
+SELECT * FROM WORKER 
+WHERE JOINING_DATE BETWEEN '2014-02-01' AND '2014-06-30' 
+AND DEPARTMENT IN ('Admin', 'Account');
+
+-- use of like % + like _
+select first_name from worker where first_name like "__i%";
+
+select first_name,salary from worker where first_name like "V%i%";
+
+select last_name , salary, department from worker where department like "%admin"; -- no case sensetivity.
+
+SELECT WORKER_ID, FIRST_NAME, DEPARTMENT 
+FROM WORKER 
+WHERE FIRST_NAME LIKE '_i__a%';
+
+SELECT WORKER_ID, FIRST_NAME, LAST_NAME 
+FROM WORKER 
+WHERE FIRST_NAME NOT LIKE 'M%' 
+AND (FIRST_NAME LIKE '%a' OR FIRST_NAME LIKE '%e');
+
+SELECT WORKER_ID, FIRST_NAME, DEPARTMENT 
+FROM WORKER 
+WHERE DEPARTMENT = 'Admin' 
+AND (FIRST_NAME LIKE '_________' OR FIRST_NAME LIKE '______');
+
+SELECT WORKER_ID, FIRST_NAME, DEPARTMENT 
+FROM WORKER 
+WHERE DEPARTMENT like '%_Admin' -- new admin is only coming as _ -> accounts for 1 mandatory gap.
+AND (last_name LIKE '%' OR FIRST_NAME LIKE '______');
+
+-- aggregate functions : sum, count, avg, max, min.
+
+select department, sum(salary) as total_salary from worker group by department;
+
+select department, count(salary) as total_people from worker group by department;
+
+select * from worker;
+
+INSERT INTO WORKER (WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
+(8, 'Aarav', 'Sharma', 95000, '2026-05-10 10:00:00', 'HR'),
+(9, 'Kavya', 'Patel', 110000, '2026-05-12 09:30:00', 'HR'),
+(10, 'Rohan', 'Das', 85000, '2026-05-15 11:15:00', 'HR'),
+(11, 'Ananya', 'Mishra', 130000, '2026-05-16 10:45:00', 'Admin'),
+(12, 'Arjun', 'Nair', 105000, '2026-05-18 14:00:00', 'Account');
+
+SELECT * FROM WORKER
+WHERE DEPARTMENT = 'Admin'
+AND SALARY < 200000
+AND FIRST_NAME NOT LIKE '%a%';
+
+INSERT INTO WORKER (WORKER_ID, FIRST_NAME, LAST_NAME, SALARY, JOINING_DATE, DEPARTMENT) VALUES
+(13, 'Rony', 'Gomez', 120000, '2026-05-19 12:00:00', 'Admin');
+
+select min(salary) from worker where department ="admin" 
+and first_name not like '%a%';
+
+SELECT * FROM WORKER
+WHERE DEPARTMENT = 'Admin'
+AND SALARY < 200000
+AND FIRST_NAME NOT LIKE '%a%';
+
+select * from worker 
+where department = 'Admin'
+and first_name not like '_a%'
+and salary = (select MIN(salary) from worker where department = 'Admin');
+
+SELECT DEPARTMENT, COUNT(*) AS total_staff, 
+AVG(SALARY) AS average_departmental_pay
+FROM WORKER
+GROUP BY DEPARTMENT;
+
+SELECT DEPARTMENT, MIN(SALARY) AS floor_salary, MAX(SALARY) AS ceiling_salary,
+(MAX(SALARY) - MIN(SALARY)) AS pay_gap
+FROM WORKER GROUP BY DEPARTMENT;
+
+SELECT DEPARTMENT, SUM(SALARY) AS total_payroll_expense
+FROM WORKER
+WHERE JOINING_DATE >= '2014-03-01 00:00:00'
+GROUP BY DEPARTMENT;
+
+select department, avg(salary) from worker group by department;
+
+-- having keyword.
+SELECT DEPARTMENT, SUM(SALARY) AS total_payroll
+FROM WORKER
+GROUP BY DEPARTMENT
+HAVING SUM(SALARY) > 300000;
+
+-- order by and limit keyword
+-- Sort your entire workforce from the highest paycheck down to the lowest, and grab the top 3 earners
+SELECT WORKER_ID, FIRST_NAME, LAST_NAME, SALARY 
+FROM WORKER
+ORDER BY SALARY DESC
+LIMIT 3;
+
+-- union 
+select salary from worker
+union
+select salary from worker;
+
+-- distinct keyword.
+select distinct(department) from worker;
+
+-- case statement.
+SELECT FIRST_NAME, DEPARTMENT,
+CASE DEPARTMENT
+WHEN 'HR' THEN 'Human Resources Team'
+WHEN 'Admin' THEN 'Administration Team'
+WHEN 'Account' THEN 'Finance Team'
+ELSE 'General Staff'
+END AS department_description
+FROM WORKER;
+
+-- case statement example 2(sir did in class)
+SELECT WORKER_ID, FIRST_NAME, SALARY,
+CASE
+WHEN SALARY >= 300000 THEN 'Rich people'
+WHEN SALARY >= 100000 THEN 'Middle'
+ELSE 'Poor'
+END AS Status
+FROM WORKER;
+
+-- views in sql : create work easy for hr, concerned people.
+select min(salary) from worker where department='admin';
+select max(salary) from worker where department='admin';
+
+-- Creating view
+CREATE VIEW v_worker_public_directory AS
+SELECT WORKER_ID, FIRST_NAME, LAST_NAME, DEPARTMENT
+FROM WORKER;
+
+SELECT * FROM v_worker_public_directory;
+
+SELECT * FROM v_worker_public_directory WHERE DEPARTMENT = 'HR';
+
+CREATE OR REPLACE VIEW v_worker_public_directory AS
+SELECT DEPARTMENT, AVG(SALARY) AS average_department_salary
+FROM WORKER 
+GROUP BY DEPARTMENT;
